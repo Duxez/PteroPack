@@ -1,24 +1,41 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import ServerContentBlock from "@/components/elements/ServerContentBlock";
-import GreyRowBox from '@/components/elements/GreyRowBox';
 import ModpackItem from './ModpackItem';
 import { ServerContext } from '@/state/server';
-import { useDeepMemoize } from '@/plugins/useDeepMemoize';
-import { use } from 'i18next';
 import getModpacks from '@/api/server/modpacks/getModpacks';
 import FlashMessageRender from '@/components/FlashMessageRender';
 import tw from 'twin.macro';
-import databases from '@/state/server/databases';
 import Spinner from '@/components/elements/Spinner';
 import Fade from '@/components/elements/Fade';
 import { Modpack } from '@/api/server/modpacks/Modpack';
 import Pagination from '@/components/elements/Pagination';
 import { PaginatedResult } from '@/api/http';
+import GreyRowBox from '@/components/elements/GreyRowBox';
+import TitledGreyBox from '@/components/elements/TitledGreyBox';
+import { Dropdown } from '@/components/elements/dropdown';
+import Select from '@/components/elements/Select';
+import { set } from 'date-fns';
+
+export enum ModloaderType {
+    Any,
+    Forge,
+    Cauldron,
+    LiteLoader,
+    Fabric,
+    Quilt
+}
+
+export interface ModpackSearchFilter {
+    modloaderType: ModloaderType;
+}
 
 export default() => {
     const uuid = ServerContext.useStoreState((state) => state.server.data!.uuid);
+    const serverData = ServerContext.useStoreState((state) => state.server.data);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
+    const [modloaderType, setModloaderType] = useState<ModloaderType>(ModloaderType.Any);
+    const [filters, setFilters] = useState<ModpackSearchFilter>({modloaderType: ModloaderType.Any});
 
     const [modpacks, setModpacks] = useState<PaginatedResult<Modpack>>();
 
@@ -32,9 +49,10 @@ export default() => {
             console.log(pageIndex, modpacks.pagination.perPage, newPage);
         }
 
-        getModpacks(uuid, pageIndex)
+        getModpacks(uuid, pageIndex, filters)
             .then((modpacksResult) => {
                 setModpacks({items: modpacksResult[0], pagination: modpacksResult[1]});
+                setModloaderType(modpacksResult[2].modloaderType);
                 setLoading(false);
             })
     }
@@ -42,11 +60,17 @@ export default() => {
     useEffect(() => {
         setLoading(!modpacks?.items.length);
 
-        getModpacks(uuid)
-            .then((modpacksResult) => {
-                setModpacks({items: modpacksResult[0], pagination: modpacksResult[1]});
-            });
-    }, []);
+
+        changePage(1);
+    }, [modloaderType]);
+
+    const updateFilterModloaderType = useCallback(
+        (e: React.ChangeEvent<HTMLSelectElement>) => {
+            setFilters({modloaderType: parseInt(e.target.value)});
+            setModloaderType(parseInt(e.target.value));
+        },
+        [modloaderType],
+    );
 
     return (
         <ServerContentBlock title="Modpacks">
@@ -56,6 +80,32 @@ export default() => {
             ) : (
                 <Fade timeout={150}>
                     <div className='grid grid-cols-3 gap-4'>
+                        <TitledGreyBox title='Filters' className='col-span-3'>
+                            <GreyRowBox>
+                                <div className='grid grid-cols-3 gap-4'>
+                                    <Select defaultValue={modloaderType} onChange={updateFilterModloaderType}>
+                                        <option value={0}>
+                                            Any
+                                        </option>
+                                        <option value={1}>
+                                            Forge
+                                        </option>
+                                        <option value={2}>
+                                            Cauldron
+                                        </option>
+                                        <option value={3}>
+                                            LiteLoader
+                                        </option>
+                                        <option value={4}>
+                                            Fabric
+                                        </option>
+                                        <option value={5}>
+                                            Quilt
+                                        </option>
+                                    </Select>
+                                </div>
+                            </GreyRowBox>
+                        </TitledGreyBox>
                         <Pagination data={modpacks as PaginatedResult<Modpack>} onPageSelect={changePage} paginationButtonsClassNames='col-span-3'>
                             {({ items }) => (
                                 items.length > 0 ? (
@@ -77,3 +127,4 @@ export default() => {
         </ServerContentBlock>
     );
 }
+

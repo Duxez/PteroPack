@@ -1,13 +1,21 @@
 import http, { PaginationDataSet } from '@/api/http'
 import { Modpack } from './Modpack';
+import { ModpackSearchFilter } from '@/components/server/modpacks/ModpackContainer';
 
-export default (uuid: string, pageIndex: number = 0): Promise<any> => {
+export default (uuid: string, pageIndex: number = 0, filters: ModpackSearchFilter): Promise<any> => {
     return new Promise((resolve, reject) => {
-        http.get(`/api/client/servers/${uuid}/modpacks?pageindex=${pageIndex}`)
-            .then((response) => {
+        let filterQuery = '&';
+        if(filters.modloaderType) {
+            filterQuery += `modloader=${filters.modloaderType}`;
+        } else {
+            filterQuery += `modloader=0`;
+        }
 
-                console.log(rawDataToModpackPaginationData(response.data.pagination), response.data.pagination);
-                resolve([(response.data.data || []).map((item: any) => rawDataToModpackData(item)), rawDataToModpackPaginationData(response.data.pagination)])
+        console.log(filterQuery);
+
+        http.get(`/api/client/servers/${uuid}/modpacks?pageindex=${pageIndex}${filterQuery}`)
+            .then((response) => {
+                resolve([(response.data.data || []).map((item: any) => rawDataToModpackData(item)), rawDataToModpackPaginationData(response.data.pagination), {modloaderType: filters.modloaderType}])
             })
             .catch(reject);
     });
@@ -18,7 +26,7 @@ export const rawDataToModpackPaginationData = (data: any): PaginationDataSet => 
     count: data.resultCount,
     perPage: data.pageSize,
     currentPage: Math.ceil((data.index + data.pageSize) / data.pageSize) == 0 ? 1 : Math.ceil((data.index + data.pageSize) / data.pageSize),
-    totalPages: Math.ceil(data.totalCount / data.pageSize) + 1
+    totalPages: Math.ceil(data.totalCount / data.pageSize)
 });
 
 export const rawDataToModpackData = (data: any): Modpack => ({
