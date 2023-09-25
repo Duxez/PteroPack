@@ -70,7 +70,8 @@ Route::group([
     Route::group(['prefix' => '/modpacks'], function () {
         Route::get('/', [Client\Servers\CurseForge\ModpackController::class, 'index']);
         Route::get('/{modpack}', [Client\Servers\CurseForge\ModpackController::class, 'show']);
-        Route::get('/{modpack}/install', [Client\Servers\CurseForge\CurseForgeModpackController::class, 'install']);
+        Route::get('/{modpack}/install', [Client\Servers\CurseForge\ModpackController::class, 'install']);
+        Route::get('/{modpack}/description', [Client\Servers\CurseForge\ModpackController::class, 'description']);
     });
 
     Route::group(['prefix' => '/databases'], function () {
@@ -83,6 +84,7 @@ Route::group([
     Route::group(['prefix' => '/files'], function () {
         Route::get('/list', [Client\Servers\FileController::class, 'directory']);
         Route::get('/contents', [Client\Servers\FileController::class, 'contents']);
+        Route::get('/exists', [Client\Servers\FileController::class, 'exists']);
         Route::get('/download', [Client\Servers\FileController::class, 'download']);
         Route::put('/rename', [Client\Servers\FileController::class, 'rename']);
         Route::post('/copy', [Client\Servers\FileController::class, 'copy']);

@@ -11,8 +11,6 @@ export default (uuid: string, pageIndex: number = 0, filters: ModpackSearchFilte
             filterQuery += `modloader=0`;
         }
 
-        console.log(filterQuery);
-
         http.get(`/api/client/servers/${uuid}/modpacks?pageindex=${pageIndex}${filterQuery}`)
             .then((response) => {
                 resolve([(response.data.data || []).map((item: any) => rawDataToModpackData(item)), rawDataToModpackPaginationData(response.data.pagination), {modloaderType: filters.modloaderType}])

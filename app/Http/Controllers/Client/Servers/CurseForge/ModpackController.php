@@ -53,6 +53,17 @@ class ModpackController extends ClientApiController {
         return $result->getBody()->getContents();
     }
 
+    public function description(Request $request, $server, $modpack) {
+
+        $result = $this->http_client->get("mods/$modpack/description");
+
+        if($result->getStatusCode() !== 200) {
+            throw new DisplayException('Failed to fetch modpack description from CurseForge.');
+        }
+
+        return $result->getBody()->getContents();
+    }
+
     public function show() {
         throw new NotImplementedException();
     }

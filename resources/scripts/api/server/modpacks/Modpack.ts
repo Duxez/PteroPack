@@ -77,7 +77,7 @@ export interface File {
   fileLength: number;
   downloadCount: number;
   downloadUrl: string;
-  gameVersion: string[];
+  gameVersions: string[];
   sortableGameVersion: GameVersion[];
   dependencies: any[];
   alternateFileId: number;
