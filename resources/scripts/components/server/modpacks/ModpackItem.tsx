@@ -8,20 +8,38 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDownload, faGamepad } from '@fortawesome/free-solid-svg-icons';
 import getModpackDescription from '@/api/server/modpacks/getModpackDescription';
 import { ServerContext } from '@/state/server';
-import { get } from 'http';
-import pullFile from '@/api/server/files/pullFile';
-import getFileExists from '@/api/server/files/getFileExists';
 import Spinner from '@/components/elements/Spinner';
-import decompressFiles from '@/api/server/files/decompressFiles';
+import installModpack from '@/api/server/modpacks/installModpack';
+import getFileExists from '@/api/server/files/getFileExists';
 
 interface Props {
     modpack: Modpack;
 }
 
+interface ModpackManifest {
+    author: string;
+    files: ModpackFile[]
+    manifestType: string;
+    manifestVersion: number;
+    minecraft: {};
+    name: string;
+    overrides: string;
+    version: string;
+}
+
+interface ModpackFile {
+    projectID: number;
+    fileID: number;
+    required: boolean;
+}
+
+const timer = (ms: number) => new Promise(res => setTimeout(res, ms))
+
 export default ({ modpack }: Props) => {
     const uuid = ServerContext.useStoreState((state) => state.server.data!.uuid);
     const [visible, setVisible] = React.useState(false);
     const [installVisible, setInstallVisible] = React.useState(false);
+    const [installed, setInstalled] = React.useState(false);
     const [modpackDesc, setModpackDesc] = React.useState<string>('');
     const [installing, setInstalling] = React.useState(false);
 
@@ -35,22 +53,17 @@ export default ({ modpack }: Props) => {
 
     const install = async (latestFile: File): Promise<void> => {
         setInstalling(true);
-        pullFile(uuid, {
-            url: latestFile.downloadUrl,
-            directory: '/home/container',
-            filename: 'modpack.zip',
-            use_header: true,
-            foreground: true,
-        });
 
-        let modpackDownloaded = await getFileExists(uuid, '/home/container/modpack.zip');
-        while (!modpackDownloaded) {
-            modpackDownloaded = await getFileExists(uuid, '/home/container/modpack.zip');
+        await installModpack(uuid, modpack.id, latestFile.id);
+
+        let uninstallableExists = false;
+        while (!uninstallableExists) {
+            uninstallableExists = await getFileExists(uuid, 'uninstallable.txt') as unknown as boolean;
+            await timer(6500);
         }
 
-        decompressFiles(uuid, '/home/container/modpack', '/home/container/modpack.zip');
-
         setInstalling(false);
+        setInstalled(true);
     };
 
     const getDescription = (): void => {
@@ -94,26 +107,31 @@ export default ({ modpack }: Props) => {
                     <div style={{ maxHeight: '50vh' }}>
                         {installing ? (
                             <div>
-                                <p>Installing...</p>
+                                <p>Installing... This can take a while, sit back, grab a drink and relax</p>
                                 <Spinner centered size='base' />
                             </div>
+                        ) : (<>{installed ? (
+                            <p>Modpack insatlled, if any mods couldn't be manually installed you can find them in the file 'uninstallable.txt', install them manually before playing.</p>
                         ) : (
-                            modpack.latestFiles.map((file) => (
-                            <div className='grid grid-cols-3 gap-4'>
-                                <p>{file.displayName}</p>
-                                <div className='flex items-center'>
-                                    <FontAwesomeIcon icon={faGamepad} style={{ marginRight: '10px' }} />
-                                    {file.gameVersions[0]}
-                                </div>
-                                <Button
-                                    onClick={() => {
-                                        install(file);
-                                    }}
-                                >
-                                    Install
-                                </Button>
-                            </div>
-                        )))}
+                                modpack.latestFiles.map((file) => (
+                                    <div className='grid grid-cols-3 gap-4'>
+                                        <p>{file.displayName}</p>
+                                        <div className='flex items-center'>
+                                            <FontAwesomeIcon icon={faGamepad} style={{ marginRight: '10px' }} />
+                                            {file.gameVersions[0]}
+                                        </div>
+                                        <Button
+                                            onClick={() => {
+                                                install(file);
+                                            }}
+                                        >
+                                            Install
+                                        </Button>
+                                    </div>
+                                ))
+                            )}
+                        </>
+                        )}
                     </div>
             </ModpackModal>
         </div>
