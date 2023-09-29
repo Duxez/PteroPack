@@ -69,8 +69,9 @@ Route::group([
 
     Route::group(['prefix' => '/modpacks'], function () {
         Route::get('/', [Client\Servers\CurseForge\ModpackController::class, 'index']);
+        Route::get('/installedgame', [Client\Servers\CurseForge\ModpackController::class, 'getInstalledGame']);
         Route::get('/{modpack}', [Client\Servers\CurseForge\ModpackController::class, 'show']);
-        Route::get('/{modpack}/install', [Client\Servers\CurseForge\ModpackController::class, 'install']);
+        Route::get('/{modpack}/install/{file}', [Client\Servers\CurseForge\ModpackController::class, 'install']);
         Route::get('/{modpack}/description', [Client\Servers\CurseForge\ModpackController::class, 'description']);
     });
 
