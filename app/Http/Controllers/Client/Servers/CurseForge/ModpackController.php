@@ -60,6 +60,10 @@ class ModpackController extends ClientApiController {
         return $result->getBody()->getContents();
     }
 
+    public function getInstalledGame(Request $request, $server) {
+        return $server->egg->nest->name;
+    }
+
     public function description(Request $request, $server, $modpack) {
 
         $result = $this->http_client->get("mods/$modpack/description");
